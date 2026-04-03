@@ -1,0 +1,241 @@
+.main {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  justify-content: center;
+  justify-items: center;
+  overflow: auto;
+  flex-grow: 1;
+  padding-block: 2rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 600px;
+  padding-inline: 2rem;
+  margin-block: auto;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.5rem;
+}
+
+.form input,
+.form textarea {
+  width: 100%;
+}
+
+.form textarea {
+  padding: 0.5rem;
+  font-size: inherit;
+  line-height: inherit;
+  resize: vertical;
+}
+
+.startButton {
+  width: 100%;
+  padding-inline: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.startButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.checkItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  transition: border-color 0.2s ease;
+}
+
+.checkItem[data-status='success'] {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.checkItem[data-status='failed'] {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.checkItem[data-status='running'] {
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.checkItem[data-status='skipped'] {
+  border-color: rgba(234, 179, 8, 0.3);
+  opacity: 0.7;
+}
+
+.checkHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.checkName {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.checkDescription {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+.statusBadge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.statusBadge[data-status='idle'] {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.statusBadge[data-status='running'] {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: rgb(96, 165, 250);
+}
+
+.statusBadge[data-status='success'] {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: rgb(74, 222, 128);
+}
+
+.statusBadge[data-status='failed'] {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: rgb(248, 113, 113);
+}
+
+.statusBadge[data-status='skipped'] {
+  background-color: rgba(234, 179, 8, 0.2);
+  color: rgb(250, 204, 21);
+}
+
+.logs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.protocolLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 0.35rem;
+}
+
+.protocolLabel:first-child {
+  margin-top: 0;
+}
+
+.logEntry {
+  font-size: 0.75rem;
+  font-family: monospace;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.logEntry[data-level='warning'] {
+  color: rgb(250, 204, 21);
+}
+
+.logEntry[data-level='error'] {
+  color: rgb(248, 113, 113);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+.summary[data-result='success'] {
+  background-color: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: rgb(74, 222, 128);
+}
+
+.summary[data-result='failed'] {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: rgb(248, 113, 113);
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-top-color: rgb(96, 165, 250);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.backLink:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.or {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
+}
+
+.autoTokenSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.autoTokenButton {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
