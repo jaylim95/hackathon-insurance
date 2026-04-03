@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RoomEvent, Track, type RemoteTrackPublication, type Room } from 'livekit-client';
+import { getAssemblyToken } from './getAssemblyToken';
 
 export interface TranscriptEntry {
   speaker: string;
@@ -15,18 +16,30 @@ interface UseTranscriptionOptions {
   enabled: boolean;
 }
 
+// Buffer ~100ms of audio at 16kHz = 1600 samples before sending
 const WORKLET_CODE = `
 class Pcm16Processor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.buffer = new Float32Array(1600);
+    this.offset = 0;
+  }
   process(inputs) {
     const input = inputs[0];
     if (input && input[0]) {
       const float32 = input[0];
-      const int16 = new Int16Array(float32.length);
       for (let i = 0; i < float32.length; i++) {
-        const s = Math.max(-1, Math.min(1, float32[i]));
-        int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        this.buffer[this.offset++] = float32[i];
+        if (this.offset >= 1600) {
+          const int16 = new Int16Array(1600);
+          for (let j = 0; j < 1600; j++) {
+            const s = Math.max(-1, Math.min(1, this.buffer[j]));
+            int16[j] = s < 0 ? s * 0x8000 : s * 0x7fff;
+          }
+          this.port.postMessage(int16.buffer, [int16.buffer]);
+          this.offset = 0;
+        }
       }
-      this.port.postMessage(int16.buffer, [int16.buffer]);
     }
     return true;
   }
@@ -79,26 +92,35 @@ export function useTranscription({ room, enabled }: UseTranscriptionOptions) {
     let cancelled = false;
 
     const start = async () => {
-      // 1. Get temporary token
-      const tokenRes = await fetch('/api/assemblyai-token', { method: 'POST' });
-      if (!tokenRes.ok || cancelled) return;
-      const { token } = await tokenRes.json();
+      // 1. Get temporary token via server action
+      console.log('[transcription] Getting token...');
+      const result = await getAssemblyToken();
+      if (cancelled) return;
+      if ('error' in result) {
+        console.error('[transcription] Token error:', result.error);
+        return;
+      }
+      const { token } = result;
+      console.log('[transcription] Got token, connecting WebSocket...');
 
       // 2. Open WebSocket to AssemblyAI
-      const wsUrl = `wss://streaming.assemblyai.com/v3/ws?speech_model=u3-rt-pro&sample_rate=16000&token=${token}`;
+      const wsUrl = `wss://streaming.assemblyai.com/v3/ws?speech_model=u3-rt-pro&sample_rate=16000&speaker_labels=true&token=${token}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
         if (cancelled) { ws.close(); return; }
+        console.log('[transcription] WebSocket connected');
         setIsConnected(true);
       };
 
       ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
+        console.log('[transcription] Message:', msg.type, msg);
+
         if (msg.type === 'Turn' && msg.transcript) {
           const entry: TranscriptEntry = {
-            speaker: msg.speaker ?? 'Speaker',
+            speaker: msg.speaker_label ? `Speaker ${msg.speaker_label}` : 'Speaker',
             text: msg.transcript,
             isFinal: msg.end_of_turn === true,
             timestamp: Date.now(),
@@ -113,10 +135,35 @@ export function useTranscription({ room, enabled }: UseTranscriptionOptions) {
         }
       };
 
-      ws.onerror = () => setIsConnected(false);
-      ws.onclose = () => setIsConnected(false);
+      ws.onerror = (e) => {
+        console.error('[transcription] WebSocket error:', e);
+        setIsConnected(false);
+      };
 
-      // 3. Set up audio: mix all room audio (local mic + remote participants) into one stream
+      ws.onclose = (e) => {
+        console.log('[transcription] WebSocket closed:', e.code, e.reason);
+        setIsConnected(false);
+      };
+
+      // Wait for WebSocket to open before setting up audio
+      await new Promise<void>((resolve, reject) => {
+        const origOpen = ws.onopen;
+        const origError = ws.onerror;
+        ws.onopen = (e) => {
+          ws.onopen = origOpen;
+          origOpen?.call(ws, e);
+          resolve();
+        };
+        ws.onerror = (e) => {
+          ws.onerror = origError;
+          origError?.call(ws, e);
+          reject(e);
+        };
+      });
+
+      if (cancelled) return;
+
+      // 3. Set up audio capture
       const audioContext = new AudioContext({ sampleRate: 16000 });
       audioContextRef.current = audioContext;
 
@@ -134,55 +181,78 @@ export function useTranscription({ room, enabled }: UseTranscriptionOptions) {
       const workletNode = new AudioWorkletNode(audioContext, 'pcm16-processor');
       workletNodeRef.current = workletNode;
 
+      let audioChunkCount = 0;
       workletNode.port.onmessage = (e: MessageEvent) => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(e.data as ArrayBuffer);
+          audioChunkCount++;
+          if (audioChunkCount % 100 === 1) {
+            console.log(`[transcription] Sent ${audioChunkCount} audio chunks`);
+          }
         }
       };
 
       mixer.connect(workletNode);
       workletNode.connect(audioContext.destination);
 
-      // Helper to connect any audio track's MediaStream to the mixer
-      const connectTrack = (id: string, mediaStream: MediaStream) => {
+      // Helper to connect a MediaStreamTrack to the mixer
+      const connectMediaStreamTrack = (id: string, mediaStreamTrack: MediaStreamTrack) => {
         const existing = sourcesRef.current.get(id);
         if (existing) existing.disconnect();
-        const source = audioContext.createMediaStreamSource(mediaStream);
+        // Create a new MediaStream from the track
+        const stream = new MediaStream([mediaStreamTrack]);
+        const source = audioContext.createMediaStreamSource(stream);
         sourcesRef.current.set(id, source);
         source.connect(mixer);
+        console.log(`[transcription] Connected audio source: ${id}`);
       };
 
-      // Connect local mic
+      // Connect local mic — get the underlying MediaStreamTrack
       const micPub = room.localParticipant.getTrackPublication(Track.Source.Microphone);
-      if (micPub?.track?.mediaStream) {
-        connectTrack('local-mic', micPub.track.mediaStream);
+      const micTrack = micPub?.track;
+      console.log('[transcription] Local mic publication:', !!micPub, 'track:', !!micTrack);
+
+      if (micTrack) {
+        const mediaStreamTrack = micTrack.mediaStreamTrack;
+        if (mediaStreamTrack) {
+          connectMediaStreamTrack('local-mic', mediaStreamTrack);
+        } else {
+          console.warn('[transcription] No mediaStreamTrack on local mic');
+        }
       }
 
       // Connect all existing remote audio tracks
       for (const participant of room.remoteParticipants.values()) {
+        console.log(`[transcription] Remote participant: ${participant.identity}`);
         for (const pub of participant.trackPublications.values()) {
-          if (pub.isSubscribed && pub.track?.mediaStream && pub.track.source === Track.Source.Microphone) {
-            connectTrack(`remote-${participant.identity}`, pub.track.mediaStream);
+          const track = pub.track;
+          if (track && track.source === Track.Source.Microphone && pub.isSubscribed) {
+            const mst = track.mediaStreamTrack;
+            if (mst) {
+              connectMediaStreamTrack(`remote-${participant.identity}`, mst);
+            }
           }
         }
       }
 
       // Listen for new remote audio tracks
       const onTrackSubscribed = (_track: unknown, publication: RemoteTrackPublication) => {
-        if (publication.track?.source === Track.Source.Microphone && publication.track.mediaStream) {
-          connectTrack(`remote-${publication.track.sid}`, publication.track.mediaStream);
+        const track = publication.track;
+        if (track?.source === Track.Source.Microphone && track.mediaStreamTrack) {
+          connectMediaStreamTrack(`remote-${track.sid}`, track.mediaStreamTrack);
         }
       };
       room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
 
-      // Store for cleanup
       return () => {
         room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
       };
     };
 
     let removeListener: (() => void) | undefined;
-    void start().then((fn) => { removeListener = fn; });
+    void start().then((fn) => { removeListener = fn; }).catch((e) => {
+      console.error('[transcription] Start failed:', e);
+    });
 
     return () => {
       cancelled = true;
