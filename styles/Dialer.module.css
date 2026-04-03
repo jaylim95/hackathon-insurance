@@ -478,6 +478,66 @@
   }
 }
 
+.transcriptSection {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid #e5e5e5;
+  padding-top: 1.25rem;
+}
+
+.transcriptHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.transcriptLive {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #16a34a;
+}
+
+.transcriptScroll {
+  max-height: 20rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  background: #fafafa;
+}
+
+.transcriptEntry {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+  line-height: 1.5;
+}
+
+.transcriptPartial {
+  opacity: 0.6;
+}
+
+.transcriptSpeaker {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #111111;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.transcriptText {
+  font-size: 0.95rem;
+  color: rgba(17, 17, 17, 0.82);
+}
+
 @media (max-width: 900px) {
   .assistantGrid {
     grid-template-columns: 1fr;

@@ -6,6 +6,7 @@ import { Room, RoomConnectOptions, RoomEvent, RoomOptions } from 'livekit-client
 import { useRouter } from 'next/navigation';
 import { createSipCall, hangupSipCall } from '@/lib/sip_call';
 import { ConnectionDetails } from '@/lib/types';
+import { useTranscription } from '@/lib/useTranscription';
 import styles from '@/styles/Dialer.module.css';
 
 const CONN_DETAILS_ENDPOINT =
@@ -76,6 +77,11 @@ export function PageClientImpl(props: {
   );
   const room = React.useMemo(() => new Room(roomOptions), [roomOptions]);
   const connectOptions = React.useMemo<RoomConnectOptions>(() => ({ autoSubscribe: true }), []);
+  const { transcripts, isConnected: transcriptionConnected } = useTranscription({
+    room,
+    enabled: status === 'in-call',
+  });
+  const transcriptEndRef = React.useRef<HTMLDivElement>(null);
   const autoDialStartedRef = React.useRef(false);
   const sipParticipantIdentityRef = React.useRef<string | null>(null);
 
@@ -202,6 +208,10 @@ export function PageClientImpl(props: {
       void dialPhone();
     }
   }, [dialPhone, phoneNumber, props.autoDial, sipParticipantIdentity, status]);
+
+  React.useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [transcripts]);
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -343,6 +353,32 @@ export function PageClientImpl(props: {
                   </button>
                 </div>
               </div>
+
+              {status === 'in-call' || transcripts.length > 0 ? (
+                <div className={styles.transcriptSection}>
+                  <div className={styles.transcriptHeader}>
+                    <p className={styles.sectionEyebrow}>Live Transcript</p>
+                    {transcriptionConnected && (
+                      <span className={styles.transcriptLive}>
+                        <span className={styles.liveDot} />
+                        Listening
+                      </span>
+                    )}
+                  </div>
+                  <div className={styles.transcriptScroll}>
+                    {transcripts.map((entry, i) => (
+                      <div
+                        key={i}
+                        className={`${styles.transcriptEntry} ${!entry.isFinal ? styles.transcriptPartial : ''}`}
+                      >
+                        <span className={styles.transcriptSpeaker}>{entry.speaker}</span>
+                        <span className={styles.transcriptText}>{entry.text}</span>
+                      </div>
+                    ))}
+                    <div ref={transcriptEndRef} />
+                  </div>
+                </div>
+              ) : null}
             </section>
 
             <section className={styles.promptPanel}>
