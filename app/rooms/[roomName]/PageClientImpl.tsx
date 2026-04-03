@@ -279,8 +279,7 @@ export function PageClientImpl(props: {
               <div className={styles.promptHeader}>
                 <p className={styles.sectionEyebrow}>Call Panel</p>
                 <p className={styles.helperCopy}>
-                  The call is live. The assistant is listening in the background while you control
-                  the coaching moments with the spacebar.
+                  The call is live. The assistant is listening in the background.
                 </p>
               </div>
 
@@ -350,7 +349,7 @@ export function PageClientImpl(props: {
               <div className={styles.promptHeader}>
                 <p className={styles.sectionEyebrow}>Assistant Feed</p>
                 <p className={styles.helperCopy}>
-                  Press spacebar to surface the next coaching card. New cards appear at the top.
+                  New cards appear at top.
                 </p>
               </div>
 
@@ -376,8 +375,8 @@ export function PageClientImpl(props: {
                 <div className={styles.promptPlaceholder}>
                   <p className={styles.promptPlaceholderTitle}>Waiting for the first coaching card</p>
                   <p className={styles.promptPlaceholderCopy}>
-                    Start the call on the left. When the insurer says something important, hit
-                    spacebar and the next prompt will slide in here.
+                    Start the call on the left. When the insurer says something important, new cards appear automatically.
+                  
                   </p>
                 </div>
               )}

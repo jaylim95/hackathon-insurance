@@ -366,10 +366,10 @@
 .promptBody {
   margin: 0;
   max-width: 30rem;
-  font-size: clamp(1.6rem, 3vw, 2.5rem);
-  line-height: 1.08;
-  letter-spacing: -0.04em;
-  color: #111111;
+  font-size: 1rem;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  color: rgba(17, 17, 17, 0.68);
 }
 
 .promptDivider {
@@ -385,7 +385,7 @@
 
 .sayThisLabel {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: rgba(17, 17, 17, 0.48);
@@ -394,8 +394,9 @@
 .sayThisQuote {
   margin: 0;
   max-width: 34rem;
-  font-size: 1.2rem;
-  line-height: 1.6;
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  line-height: 1.22;
+  letter-spacing: -0.03em;
   color: #111111;
 }
 
