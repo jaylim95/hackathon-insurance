@@ -355,6 +355,14 @@
   color: #b42318;
 }
 
+.promptCardTitle {
+  margin: -0.4rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: #111111;
+}
+
 .promptBody {
   margin: 0;
   max-width: 30rem;

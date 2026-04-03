@@ -13,22 +13,38 @@ const CONN_DETAILS_ENDPOINT =
 
 const PROMPT_CARDS = [
   {
-    id: 'injury-question',
-    header: 'RED FLAG',
-    whyItMatters: 'They may be trying to get statements about injuries on record.',
-    sayThis: '“I’m still receiving treatment and not ready to discuss that.”',
+    id: 'recording-consent',
+    badge: '🔵 Info',
+    title: 'Recording consent request',
+    whyItMatters:
+      "Adjusters ask for recording consent immediately — before you're even in the conversation. A recorded statement can be used against you. You are not legally required to agree.",
+    sayThis: '“I prefer not to be recorded. Please communicate with me in writing.”',
   },
   {
-    id: 'settlement-offer',
-    header: 'RED FLAG',
-    whyItMatters: 'Early offers often come before the full impact is clear.',
-    sayThis: '“I’m not ready to discuss settlement at this stage.”',
+    id: 'feeling-okay',
+    badge: '🔴 Red flag',
+    title: 'Adjuster asks how you are feeling',
+    whyItMatters:
+      "Saying 'okay' or 'fine' becomes evidence. The adjuster will use this to argue your injuries weren't serious — even if symptoms haven't fully appeared yet.",
+    sayThis: '“I am still treating and not in a position to discuss my condition.”',
   },
   {
-    id: 'urgency-pressure',
-    header: 'RED FLAG',
-    whyItMatters: 'Urgency is often used to push a quick decision.',
-    sayThis: '“I need time to review before making any decision.”',
+    id: 'walk-back',
+    badge: '🟡 Recovery',
+    title: 'You corrected the record',
+    whyItMatters:
+      "Good correction. You've walked back the statement and reestablished that you are still treating. The adjuster may try to use the initial 'okay' anyway — stay consistent from here.",
+    sayThis:
+      '“I mean okay only in the sense that I am coping. I am still receiving treatment and waiting on results from my medical team.”',
+  },
+  {
+    id: 'lowball-offer',
+    badge: '🔴 Red flag',
+    title: 'Early settlement push',
+    whyItMatters:
+      "They've ignored your correction and are pressing forward with the lowball offer anyway. 'Staying positive' is now their framing. Do not engage with the number.",
+    sayThis:
+      '“I am not in a position to discuss settlement. Please send any correspondence in writing.”',
   },
 ] as const;
 
@@ -345,7 +361,8 @@ export function PageClientImpl(props: {
                       key={card.id}
                       className={`${styles.promptCard} ${index === 0 ? styles.promptCardNewest : ''}`}
                     >
-                      <p className={styles.redFlagLabel}>🔴 {card.header}</p>
+                      <p className={styles.redFlagLabel}>{card.badge}</p>
+                      <p className={styles.promptCardTitle}>{card.title}</p>
                       <p className={styles.promptBody}>{card.whyItMatters}</p>
                       <div className={styles.promptDivider} />
                       <div className={styles.sayThisBlock}>
